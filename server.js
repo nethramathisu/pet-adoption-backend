@@ -19,13 +19,12 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://pet-adoption-we.netlify.app/login"
+    "https://pet-adoption-we.netlify.app"
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
-app.options("*", cors());
 
 app.use(express.json());
 
