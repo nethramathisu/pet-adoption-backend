@@ -1,5 +1,5 @@
 import express from "express";
-import { fosterAssign,getMyFosterPets,removeFoster, addFosterUpdate,getFosterUpdates, } from "../controllers/fosterController.js";
+import { fosterAssign,getMyFosterPets,removeFoster, addFosterUpdate,getFosterUpdates,getAllFosters  } from "../controllers/fosterController.js";
 import {protect} from "../middleware/authmiddleware.js"
 
 const router=express.Router();
@@ -18,4 +18,9 @@ router.post("/update/:petId",protect,addFosterUpdate);
 
 //get updated msg from foster 
 router.get("/updates/:petId",protect,getFosterUpdates);
+
+//get all fosters
+router.get("/",protect, getAllFosters);
+
 export default router;
+

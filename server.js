@@ -37,6 +37,10 @@ app.get("/", (req, res) =>
 	res.send("Pet adoption loading")
 });
 
+app.use("/api/foster",fosterRoutes)
+
+app.use("/api/meetings",meetingRoutes);
+
 app.use((err, req, res, next) =>
 {
 	console.log("GLOBAL ERROR:", err);
@@ -45,11 +49,6 @@ app.use((err, req, res, next) =>
 		stack: err.stack
 	});
 });
-
-app.use("/api/foster",fosterRoutes)
-
-app.use("/api/meetings",meetingRoutes);
-
 
 
 const PORT = process.env.PORT || 5000;

@@ -5,7 +5,7 @@ import { requestMeeting,getMyMeetings,getShelterMeetings,updateMeetingStatus } f
 const router = express.Router();
 
 //request meeeting
-router.post("/request/meeting/:petId",protect,requestMeeting);
+router.post("/request/:petId",protect,requestMeeting);
 
 //getmymetings
 router.get("/user",protect,getMyMeetings)

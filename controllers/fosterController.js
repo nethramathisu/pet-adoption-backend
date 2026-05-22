@@ -161,6 +161,23 @@ export const getFosterUpdates = async (req, res) => {
   }
 };
 
+export const getAllFosters = async (req, res) => {
+    try {
+        // ONLY SHELTER CAN ACCESS
+        if (req.user.role !== "Shelter") {
+            return res.status(403).json({
+                message: "Only shelters can access foster list",
+            });
+        }
 
+        const fosters = await User.find({ role: "Foster" })
+            .select("_id name email"); // keep it clean
 
+        res.status(200).json(fosters);
+    } catch (err) {
+        res.status(500).json({
+            message: "Failed to fetch fosters",
+        });
+    }
+};
 

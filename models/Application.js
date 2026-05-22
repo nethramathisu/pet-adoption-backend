@@ -5,7 +5,7 @@ const applicationSchema = new mongoose.Schema(
 		pet: { type: mongoose.Schema.Types.ObjectId, ref: "Pet" },
 		status: {
 			type: String,
-			enum: ["approved", "pending", "rejected", "need_more_info"],
+			enum: ["approved", "pending", "rejected", "request_more_info"],
 			default: "pending"
 		},
 		message: String,

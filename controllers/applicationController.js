@@ -74,21 +74,24 @@ export const applyForPet = async (req, res) =>
 
 //GET USER APPLICATIONS
 
-export const getUserApplications = async (req, res) =>
-{
-	try
-	{
-		const applications = await Application.findOne({
-			user: req.user._id,
-		}).populate("pet").populate("user", "name email")
+export const getUserApplications = async (req, res) => {
+  try {
 
-		res.status(201).json(applications)
-	}
-	catch (error)
-	{
-		return res.status(500).json({ message: error.message || "Internal server error" });
-	}
-}
+    const applications = await Application.find({
+      user: req.user._id,
+    })
+      .populate("pet")
+      .populate("user", "name email");
+
+    res.status(200).json(applications);
+
+  } catch (error) {
+    return res.status(500).json({
+      message:
+        error.message || "Internal server error",
+    });
+  }
+};
 
 
 
@@ -98,16 +101,28 @@ export const getApplicationsByShelter = async (req, res) =>
 {
 	try
 	{
-		const applications = await Application.find().populate("pet").populate("user", "name email");
-		const filtered = await applications.filter((app) => app.pet.createdBy.toString() === req.user._id.toString());
-		res.status(201).json(filtered)
+		const applications = await Application.find()
+			.populate({
+				path: "pet",
+				select: "name images createdBy"
+			})
+			.populate("user", "name email");
 
+		// SAFE FILTER (IMPORTANT)
+		const filtered = applications.filter(app =>
+			app.pet && app.pet.createdBy &&
+			app.pet.createdBy.toString() === req.user._id.toString()
+		);
+
+		res.status(200).json(filtered);
 	}
 	catch (error)
 	{
-		return res.status(500).json({ message: error.message || "Internal server error" })
+		return res.status(500).json({
+			message: error.message || "Internal server error"
+		});
 	}
-}
+};
 
 
 //Approve or reject updateapplicationstatus

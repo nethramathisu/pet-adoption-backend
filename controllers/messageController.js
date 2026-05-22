@@ -6,19 +6,38 @@ export const Sendmessage = async (req, res) =>
 {
 	try
 	{
-		const { receiver, petId, message, } = req.body;
+		const { receiver, petId, message } = req.body;
 
-		//verify message
-		if (!message)
+		// validate message
+		if (!message?.trim())
 		{
-			return res.status(400).json({ message: "Message is required!" })
+			return res.status(400).json({
+				message: "Message is required!",
+			});
 		}
 
-		//verify pet
+		// find pet
 		const pet = await Pet.findById(petId);
 
+		// pet check MUST come before using pet
+		if (!pet)
+		{
+			return res.status(404).json({
+				message: "Pet not found",
+			});
+		}
+
+		// prevent self message
+		if (receiver === req.user._id.toString())
+		{
+			return res.status(400).json({
+				message: "You cannot message yourself",
+			});
+		}
+
+		// allowed users
 		const allowedReceivers = [
-			pet.createdBy?.toString(),
+			pet.createdBy.toString(),
 		];
 
 		if (pet.fosteredBy)
@@ -28,6 +47,24 @@ export const Sendmessage = async (req, res) =>
 			);
 		}
 
+		// DEBUG LOGS
+		console.log("Receiver:", receiver);
+
+		console.log(
+			"Pet creator:",
+			pet.createdBy.toString()
+		);
+
+		console.log(
+			"Pet foster:",
+			pet.fosteredBy?.toString()
+		);
+
+		console.log(
+			"Allowed:",
+			allowedReceivers
+		);
+
 		if (!allowedReceivers.includes(receiver))
 		{
 			return res.status(403).json({
@@ -35,31 +72,29 @@ export const Sendmessage = async (req, res) =>
 			});
 		}
 
-		if (!pet)
-		{
-			return res.status(404).json({ message: "Pet not found" })
-		}
-
-		if (receiver === req.user._id.toString())
-		{
-			return res.status(400).json({
-				message: "You cannot message yourself",
-			});
-		}
 		const newMessage = await Message.create({
 			sender: req.user._id,
 			receiver,
 			message,
-			pet: new mongoose.Types.ObjectId(petId),
-		})
+			pet: petId,
+		});
 
-		res.status(201).json(newMessage)
-	}
-	catch (error)
+		const populatedMessage =
+			await Message.findById(newMessage._id)
+				.populate("sender", "name")
+				.populate("receiver", "name");
+
+		return res.status(201).json(
+			populatedMessage
+		);
+
+	} catch (error)
 	{
-		return res.status(500).json({ message: error.message });
+		return res.status(500).json({
+			message: error.message || "Internal server error"
+		});
 	}
-}
+};
 
 
 //get chats b/w 2 users

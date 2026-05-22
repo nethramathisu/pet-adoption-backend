@@ -11,6 +11,18 @@ export const createReview = async (req, res) =>
 		const { rating, comment } = req.body;
 		const shelterId = req.params.shelterId;
 
+		// prevent self-review
+		if (
+			req.user.role === "Shelter" &&
+			req.user._id.toString() === shelterId
+		) {
+			return res.status(400).json({
+				message:
+					"You cannot review your own shelter",
+			});
+		}
+
+
 		const shelter = await User.findById(shelterId);
 
 		if (!shelter || shelter.role !== "Shelter")
@@ -108,7 +120,7 @@ export const createPetReview = async (req, res) =>
 		}
 		const { rating, comment } = req.body;
 
-	
+
 
 		if (!pet)
 		{
@@ -135,17 +147,23 @@ export const createPetReview = async (req, res) =>
 
 
 //get pet reviews
-export const getPetReviews = async (req, res) =>
-{
-	try
-	{
+export const getPetReviews = async (req, res) => {
+	try {
+		res.set({
+			"Cache-Control":
+				"no-store, no-cache, must-revalidate, proxy-revalidate",
+			"Pragma": "no-cache",
+			"Expires": "0",
+			"Surrogate-Control": "no-store",
+		});
+
 		const reviews = await Review.find({
 			pet: req.params.petId,
 		}).populate("user", "name");
 
 		res.json(reviews);
-	} catch (error)
-	{
+
+	} catch (error) {
 		res.status(500).json({
 			message: error.message,
 		});
@@ -154,10 +172,17 @@ export const getPetReviews = async (req, res) =>
 
 
 //get pet average rating
-export const getPetAverageRating = async (req, res) =>
-{
-	try
-	{
+export const getPetAverageRating = async (req, res) => {
+	try {
+		// disable cache
+		res.set({
+			"Cache-Control":
+				"no-store, no-cache, must-revalidate, proxy-revalidate",
+			"Pragma": "no-cache",
+			"Expires": "0",
+			"Surrogate-Control": "no-store",
+		});
+
 		const reviews = await Review.find({
 			pet: req.params.petId,
 		});
@@ -169,11 +194,11 @@ export const getPetAverageRating = async (req, res) =>
 			) / (reviews.length || 1);
 
 		res.json({
-			averageRating: avg.toFixed(1),
+			average: Number(avg.toFixed(1)),
 			totalReviews: reviews.length,
 		});
-	} catch (error)
-	{
+
+	} catch (error) {
 		res.status(500).json({
 			message: error.message,
 		});

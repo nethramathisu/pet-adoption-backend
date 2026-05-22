@@ -2,85 +2,189 @@ import Pet from "../models/Pet.js";
 import User from "../models/User.js";
 import { sendMail } from "../utils/sendEmail.js";
 
-//create Pet
-export const createPet = async (req, res) =>
-{
-	try
-	{
-		if (req.user.role !== "Shelter")
-		{
+
+// ================= CREATE PET =================
+
+export const createPet = async (req, res) => {
+	try {
+
+		console.log("BODY:", req.body);
+		console.log("FILES:", req.files);
+
+		// role check
+		if (req.user.role !== "Shelter") {
 			return res.status(403).json({
-				message: "Only shelters can create pets",
+				message: "Only shelters can create pets"
 			});
 		}
-		const { name, age, breed, size, color, medicalHistory, images, videos, location, status } = req.body;
-		const imageUrls = req.files?.images?.map(file => file?.path || file?.url || file?.secure_url) || [];
-		const videoUrls = req.files?.videos?.map(file => file?.secure_url) || [];
-		const pet = await Pet.create({
+
+		const {
 			name,
 			age,
 			breed,
 			size,
 			color,
 			medicalHistory,
-			images: imageUrls,
-			videos: videoUrls,
 			location,
-			status: status || "available",
-			createdBy: req.user._id
+			status
+		} = req.body;
 
-		},
-		);
 
-		const adopters = await User.find({
-			role: "Adopter",
-		});
+		// validation
 
-		for (const adopter of adopters)
-		{
-			await sendMail({
-				to: adopter.email,
-
-				subject: `New Pet Available: ${pet.name}`,
-
-				html: `
-      <h2>New Pet Listing Added</h2>
-
-      <p>
-        A new pet is now available for adoption!
-      </p>
-
-      <ul>
-        <li><b>Name:</b> ${pet.name}</li>
-        <li><b>Breed:</b> ${pet.breed}</li>
-        <li><b>Age:</b> ${pet.age}</li>
-        <li><b>Location:</b> ${pet.location}</li>
-      </ul>
-
-      <p>
-        Check the platform to learn more.
-      </p>
-    `,
+		if (
+			!name ||
+			!age ||
+			!breed
+		) {
+			return res.status(400).json({
+				message:
+					"Name, age and breed are required"
 			});
 		}
-		res.status(201).json({ pet })
-	}
-	catch (error)
-	{
-		console.log("FULL ERROR:", error);
-		console.log("STACK:", error?.stack);
 
-		return res.status(500).json({
-			message: error.message || "Server Error"
+
+		// uploaded files
+
+		const imageUrls =
+			req.files?.images?.map(
+				(file) =>
+					file.path ||
+					file.url ||
+					file.secure_url
+			) || [];
+
+		const videoUrls =
+			req.files?.videos?.map(
+				(file) =>
+					file.path ||
+					file.url ||
+					file.secure_url
+			) || [];
+
+
+		// create pet
+
+		const pet = await Pet.create({
+			name,
+			age: Number(age),
+			breed,
+			size,
+			color,
+			medicalHistory,
+			location,
+			images: imageUrls,
+			videos: videoUrls,
+			status: status || "available",
+			createdBy: req.user._id
+		});
+
+
+		// send emails
+
+		try {
+
+			const adopters =
+				await User.find({
+					role: "Adopter"
+				});
+
+			for (const adopter of adopters) {
+
+				await sendMail({
+					to: adopter.email,
+
+					subject:
+						`🐶 New Pet Available: ${pet.name}`,
+
+					html: `
+<div style="font-family:Arial;padding:20px">
+
+<h2>🐾 New Pet Available!</h2>
+
+<p>
+A new pet has been listed for adoption.
+</p>
+
+<table style="border-collapse:collapse">
+
+<tr>
+<td><b>Name:</b></td>
+<td>${pet.name}</td>
+</tr>
+
+<tr>
+<td><b>Breed:</b></td>
+<td>${pet.breed}</td>
+</tr>
+
+<tr>
+<td><b>Age:</b></td>
+<td>${pet.age}</td>
+</tr>
+
+<tr>
+<td><b>Location:</b></td>
+<td>${pet.location || "N/A"}</td>
+</tr>
+
+</table>
+
+<br/>
+
+<p>
+Visit the platform and meet your future companion ❤️
+</p>
+
+</div>
+`
+				});
+			}
+
+		}
+		catch(emailError){
+
+			console.log(
+				"Email error:",
+				emailError
+			);
+
+			// do NOT stop pet creation
+		}
+
+		return res.status(201).json({
+			message:
+				"Pet created successfully",
+			pet
+		});
+
+	}
+	catch (error) {
+
+		console.log(
+			"FULL ERROR:",
+			error
+		);
+
+		res.status(500).json({
+			message:
+				error.message ||
+				"Server Error"
 		});
 	}
-}
+};
 
-//get all pets by filter
-export const getPets = async (req, res) =>
-{
-	try
-	{
+
+
+
+// ================= GET PETS =================
+
+export const getPets = async (
+	req,
+	res
+) => {
+
+	try {
 
 		const {
 			name,
@@ -93,184 +197,295 @@ export const getPets = async (req, res) =>
 			search,
 			sortBy,
 			order,
-			page,
-			limit,
+			page = 1,
+			limit = 10
 		} = req.query;
 
-		let filter = {}
+		let filter = {};
 
-		//searching by attributes
-		if (breed) filter.breed = { $regex: breed, $options: "i" };
-		if (size) filter.size = { $regex: size, $options: "i" };
-		if (location) filter.location = { $regex: location, $options: "i" };
-		if (status) filter.status = { $regex: status, $options: "i" };
-		if (color) filter.color = { $regex: color, $options: "i" };
-		if (name) filter.name = { $regex: name, $options: "i" };
-		if (age) filter.age = age;
 
-		//searching by name or breed
-		if (search)
-		{
+		// filters
+
+		if (name)
+			filter.name = {
+				$regex: name,
+				$options: "i"
+			};
+
+		if (breed)
+			filter.breed = {
+				$regex: breed,
+				$options: "i"
+			};
+
+		if (size)
+			filter.size = {
+				$regex: size,
+				$options: "i"
+			};
+
+		if (location)
+			filter.location = {
+				$regex: location,
+				$options: "i"
+			};
+
+		if (color)
+			filter.color = {
+				$regex: color,
+				$options: "i"
+			};
+
+		if (status)
+			filter.status = {
+				$regex: status,
+				$options: "i"
+			};
+
+		if (age)
+			filter.age =
+				Number(age);
+
+
+		// search
+
+		if (search) {
+
 			filter.$or = [
+
 				{
-					name: { $regex: search, $options: "i" }
+					name: {
+						$regex: search,
+						$options: "i"
+					}
 				},
+
 				{
-					breed: { $regex: search, $options: "i" }
+					breed: {
+						$regex: search,
+						$options: "i"
+					}
+				},
+
+				{
+					location: {
+						$regex: search,
+						$options: "i"
+					}
+				},
+
+				{
+					color: {
+						$regex: search,
+						$options: "i"
+					}
 				}
-			]
+			];
+
+
+			if (
+				!isNaN(search)
+			) {
+				filter.$or.push({
+					age:
+						Number(search)
+				});
+			}
 		}
 
-		//pagination
-		const pageNumber = Number(page) || 1;
-		const pageSize = Number(limit) || 10;
-		const skip = (pageNumber - 1) * pageSize;
 
-		// sorting
-		const sortField = sortBy || "createdAt";
-		const sortOrder = order === "asc" ? 1 : -1;
+		const pageNumber =
+			Number(page);
 
-		const totalPets = await Pet.countDocuments(filter);
+		const pageSize =
+			Number(limit);
 
-		//filtering
-		const pets = await Pet.find(filter).populate("createdBy", "name email").sort({ [sortField]: sortOrder })
-			.skip(skip)
-			.limit(pageSize);;
+		const skip =
+			(pageNumber - 1)
+			* pageSize;
+
+		const totalPets =
+			await Pet.countDocuments(
+				filter
+			);
+
+		const pets =
+			await Pet.find(
+				filter
+			)
+
+				.populate(
+					"createdBy",
+					"name email"
+				)
+
+				.sort({
+					[sortBy || "createdAt"]:
+						order === "asc"
+							? 1
+							: -1
+				})
+
+				.skip(skip)
+
+				.limit(
+					pageSize
+				);
+
+
 		res.json({
-			currentPage: pageNumber,
-			totalPages: Math.ceil(totalPets / pageSize),
+
+			currentPage:
+				pageNumber,
+
+			totalPages:
+				Math.ceil(
+					totalPets /
+					pageSize
+				),
+
 			totalPets,
+
 			pets
+
 		});
 
 	}
-	catch (error)
-	{
-		console.log("FULL ERROR:", error);
-		console.log("STACK:", error?.stack);
+	catch (error) {
 
-		return res.status(500).json({
-			message: error.message || "Server Error"
+		console.log(error);
+
+		res.status(500).json({
+			message:
+				error.message
 		});
 	}
-}
+};
 
 
-//getPetByID
 
-export const getPetByID = async (req, res) =>
-{
-	try
-	{
-		const pet = await Pet.findById(req.params.id).populate("createdBy", "name email");
-		if (!pet)
-		{
-			return res.status(404).json({ message: "Pet not found" })
+
+// ================= GET PET BY ID =================
+
+export const getPetByID =
+async (req,res)=>{
+
+	try{
+
+		const pet=
+		await Pet.findById(
+			req.params.id
+		)
+		.populate(
+			"createdBy",
+			"name email"
+		).populate("fosteredBy", "name email");;
+
+		if(!pet){
+			return res.status(404)
+			.json({
+				message:"Pet not found"
+			});
 		}
-		res.json(pet)
+
+		res.json(pet);
 
 	}
-	catch (error)
-	{
-		console.log("FULL ERROR:", error);
-		console.log("STACK:", error?.stack);
+	catch(error){
 
-		return res.status(500).json({
-			message: error.message || "Server Error"
+		res.status(500).json({
+			message:error.message
 		});
 	}
-}
+};
 
 
-//updatePet by shelter
-
-export const updatePet = async (req, res) =>
-{
-
-	try
-	{
-		const pet = await Pet.findById(req.params.id);
-
-		if (!pet)
-		{
-			return res.status(404).json({ message: "Pet not found" });
-		}
 
 
-		if (pet.createdBy.toString() !== req.user._id.toString())
-		{
-			return res.status(403).json({ message: "Not allowed" });
-		}
+// ================= UPDATE PET =================
 
-		// extract uploaded files
-		const imageUrls = req.files?.images?.map(file => file?.path || file?.url || file?.secure_url) || [];
-		const videoUrls = req.files?.videos?.map(file => file?.secure_url || file?.url || file?.path) || [];
+export const updatePet =
+async(req,res)=>{
 
-		//merging  with existing data
-		const updatedData = { ...req.body }
+	try{
 
-		if (imageUrls.length > 0)
-		{
-			updatedData.images = imageUrls;
-		}
-
-		if (videoUrls.length > 0)
-		{
-			updatedData.videos = videoUrls;
-		}
-
-		const updatePet = await Pet.findByIdAndUpdate(
-			req.params.id,
-			updatedData,
-			{ new: true }
+		const pet=
+		await Pet.findById(
+			req.params.id
 		);
 
-		res.json(updatePet)
-	}
-	catch (error)
-	{
-		console.log("FULL ERROR:", error);
-		console.log("STACK:", error?.stack);
-
-		return res.status(500).json({
-			message: error.message || "Server Error"
-		});
-	}
-
-
-}
-
-//Delete petByID
-
-export const deletePetId = async (req, res) =>
-{
-	try
-	{
-		const pet = await Pet.findById(req.params.id);
-
-		if (!pet)
-		{
-			return res.status(404).json({ message: "Pet not found" })
+		if(!pet){
+			return res.status(404)
+			.json({
+				message:"Pet not found"
+			});
 		}
 
-		if (pet.createdBy.toString() !== req.user._id.toString())
-		{
-			return res.status(403).json({ message: "Not allowed" })
+		if(
+			pet.createdBy.toString()
+			!==req.user._id.toString()
+		){
+			return res.status(403)
+			.json({
+				message:"Not allowed"
+			});
+		}
+
+		const updatedPet=
+		await Pet.findByIdAndUpdate(
+			req.params.id,
+			req.body,
+			{
+				new:true
+			}
+		);
+
+		res.json(updatedPet);
+
+	}
+	catch(error){
+
+		res.status(500).json({
+			message:error.message
+		});
+	}
+};
+
+
+
+
+// ================= DELETE =================
+
+export const deletePetId =
+async(req,res)=>{
+
+	try{
+
+		const pet=
+		await Pet.findById(
+			req.params.id
+		);
+
+		if(!pet){
+
+			return res.status(404)
+			.json({
+				message:"Pet not found"
+			});
 		}
 
 		await pet.deleteOne();
-		res.json({ message: "Pet removed" })
-	}
-	catch (error)
-	{
-		console.log("FULL ERROR:", error);
-		console.log("STACK:", error?.stack);
 
-		return res.status(500).json({
-			message: error.message || "Server Error"
+		res.json({
+			message:
+			"Pet removed successfully"
+		});
+
+	}
+	catch(error){
+
+		res.status(500).json({
+			message:error.message
 		});
 	}
-}
-
-
-
+};
