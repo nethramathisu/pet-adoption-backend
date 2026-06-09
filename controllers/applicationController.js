@@ -74,23 +74,26 @@ export const applyForPet = async (req, res) =>
 
 //GET USER APPLICATIONS
 
-export const getUserApplications = async (req, res) => {
-  try {
+export const getUserApplications = async (req, res) =>
+{
+	try
+	{
 
-    const applications = await Application.find({
-      user: req.user._id,
-    })
-      .populate("pet")
-      .populate("user", "name email");
+		const applications = await Application.find({
+			user: req.user._id,
+		})
+			.populate("pet")
+			.populate("user", "name email");
 
-    res.status(200).json(applications);
+		res.status(200).json(applications);
 
-  } catch (error) {
-    return res.status(500).json({
-      message:
-        error.message || "Internal server error",
-    });
-  }
+	} catch (error)
+	{
+		return res.status(500).json({
+			message:
+				error.message || "Internal server error",
+		});
+	}
 };
 
 
@@ -127,65 +130,74 @@ export const getApplicationsByShelter = async (req, res) =>
 
 //Approve or reject updateapplicationstatus
 
-export const updateApplicationStatus = async (req, res) => {
-  try {
-    const { status, responseMessage } = req.body;
+export const updateApplicationStatus = async (req, res) =>
+{
+	try
+	{
+		console.log("🔥 UPDATE HIT");
+		console.log("PARAM ID:", req.params.id);
+		console.log("BODY:", req.body);
+		const { status, responseMessage } = req.body;
 
-    const application = await Application.findById(req.params.id).populate("pet");
+		const application = await Application.findById(req.params.id)
+			.populate("pet");
 
-    if (!application) {
-      return res.status(404).json({ message: "Application not found" });
-    }
+		if (!application)
+		{
+			return res.status(404).json({ message: "Application not found" });
+		}
 
-    if (!application.pet?.createdBy) {
-      return res.status(400).json({ message: "Invalid pet data" });
-    }
+		// 🔥 SAFE CHECK (PREVENT 500 ERROR)
+		if (!application.pet || !application.pet.createdBy)
+		{
+			return res.status(400).json({
+				message: "Invalid application or pet data"
+			});
+		}
 
-    if (
-      application.pet.createdBy.toString() !== req.user._id.toString()
-    ) {
-      return res.status(403).json({ message: "Not allowed" });
-    }
+		if (
+			application.pet.createdBy.toString() !== req.user._id.toString()
+		)
+		{
+			return res.status(403).json({ message: "Not allowed" });
+		}
 
-    // update
-    application.status = status;
-    application.responseMessage = responseMessage || "";
-    await application.save();
+		application.status = status;
+		application.responseMessage = responseMessage || "";
 
-    // send email
-    const applicant = await User.findById(application.user);
-    const pet = application.pet;
+		await application.save();
 
-    await sendMail({
-      to: applicant.email,
-      subject: `Application Update for ${pet.name}`,
-      html: `
+		const applicant = await User.findById(application.user);
+		const pet = application.pet;
+
+		await sendMail({
+			to: applicant.email,
+			subject: `Application Update for ${pet.name}`,
+			html: `
         <h2>Application Status Updated</h2>
-
         <p>
           Your application for <b>${pet.name}</b> is now:
           <b>${status}</b>
         </p>
-
         <p>
           <b>Shelter Response:</b>
           ${responseMessage || "No additional message"}
         </p>
       `,
-    });
+		});
 
-    return res.json({
-      success: true,
-      message: "Status updated successfully"
-    });
+		return res.json({
+			success: true,
+			message: "Status updated successfully",
+			application
+		});
 
-  } catch (error) {
-    return res.status(500).json({
-      message: error.message || "Internal server error"
-    });
-  }
+	} catch (error)
+	{
+		console.error("UPDATE ERROR:", error);
+		return res.status(500).json({ message: error.message });
+	}
 };
-
 //find application for particular pet
 
 export const getApplicationsForPet = async (req, res) =>
