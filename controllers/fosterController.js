@@ -82,6 +82,12 @@ export const removeFoster = async (req, res) =>
 			res.status(403).json({ message: "Not allowed" });
 		}
 
+		if (!pet.fosteredBy)
+		{
+			return res.status(400).json({
+				message: "No foster assigned to this pet",
+			});
+		}
 		pet.fosteredBy = null;
 		pet.status = "available";
 
@@ -96,88 +102,101 @@ export const removeFoster = async (req, res) =>
 }
 
 //foster updates about pet
-export const addFosterUpdate = async (req, res) => {
-  try {
-    const { message } = req.body;
+export const addFosterUpdate = async (req, res) =>
+{
+	try
+	{
+		const { message } = req.body;
 
-    const pet = await Pet.findById(req.params.petId);
+		const pet = await Pet.findById(req.params.petId);
 
-    if (!pet) {
-      return res.status(404).json({
-        message: "Pet not found",
-      });
-    }
+		if (!pet)
+		{
+			return res.status(404).json({
+				message: "Pet not found",
+			});
+		}
 
-    // only assigned foster can update
-    if (
-      pet.fosteredBy?.toString() !==
-      req.user._id.toString()
-    ) {
-      return res.status(403).json({
-        message: "Not authorized",
-      });
-    }
+		// only assigned foster can update
+		if (
+			pet.fosteredBy?.toString() !==
+			req.user._id.toString()
+		)
+		{
+			return res.status(403).json({
+				message: "Not authorized",
+			});
+		}
 
-    pet.fosterUpdates.push({
-      message,
-      createdBy: req.user._id,
-    });
+		pet.fosterUpdates.push({
+			message,
+			createdBy: req.user._id,
+		});
 
-    await pet.save();
+		await pet.save();
 
-    res.json({
-      message: "Foster update added",
-      fosterUpdates: pet.fosterUpdates,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
+		res.json({
+			message: "Foster update added",
+			fosterUpdates: pet.fosterUpdates,
+		});
+	} catch (error)
+	{
+		res.status(500).json({
+			message: error.message,
+		});
+	}
 };
 
 
 //GET FOSTER UPDATES
-export const getFosterUpdates = async (req, res) => {
-  try {
-    const pet = await Pet.findById(
-      req.params.petId
-    ).populate(
-      "fosterUpdates.createdBy",
-      "name"
-    );
+export const getFosterUpdates = async (req, res) =>
+{
+	try
+	{
+		const pet = await Pet.findById(
+			req.params.petId
+		).populate(
+			"fosterUpdates.createdBy",
+			"name"
+		);
 
-    if (!pet) {
-      return res.status(404).json({
-        message: "Pet not found",
-      });
-    }
+		if (!pet)
+		{
+			return res.status(404).json({
+				message: "Pet not found",
+			});
+		}
 
-    res.json(pet.fosterUpdates);
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
+		res.json(pet.fosterUpdates);
+	} catch (error)
+	{
+		res.status(500).json({
+			message: error.message,
+		});
+	}
 };
 
-export const getAllFosters = async (req, res) => {
-    try {
-        // ONLY SHELTER CAN ACCESS
-        if (req.user.role !== "Shelter") {
-            return res.status(403).json({
-                message: "Only shelters can access foster list",
-            });
-        }
+export const getAllFosters = async (req, res) =>
+{
+	try
+	{
+		// ONLY SHELTER CAN ACCESS
+		if (req.user.role !== "Shelter")
+		{
+			return res.status(403).json({
+				message: "Only shelters can access foster list",
+			});
+		}
 
-        const fosters = await User.find({ role: "Foster" })
-            .select("_id name email"); // keep it clean
+		const fosters = await User.find({ role: "Foster" })
+			.select("_id name email"); // keep it clean
 
-        res.status(200).json(fosters);
-    } catch (err) {
-        res.status(500).json({
-            message: "Failed to fetch fosters",
-        });
-    }
+		res.status(200).json(fosters);
+	} catch (err)
+	{
+		res.status(500).json({
+			message: "Failed to fetch fosters",
+		});
+	}
 };
 

@@ -65,10 +65,12 @@ export const Sendmessage = async (req, res) =>
 			allowedReceivers
 		);
 
-		if (!allowedReceivers.includes(receiver))
+		if (
+			receiver === req.user._id.toString()
+		)
 		{
-			return res.status(403).json({
-				message: "Invalid receiver",
+			return res.status(400).json({
+				message: "You cannot message yourself",
 			});
 		}
 
@@ -175,7 +177,7 @@ export const markMsgAsRead = async (req, res) =>
 			{ $set: { read: true } }
 		)
 
-		res.status(201).json({ message: "Meesage marked as read" })
+		res.status(201).json({ message: "Message marked as read" })
 	}
 	catch (error)
 	{
