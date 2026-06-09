@@ -127,58 +127,64 @@ export const getApplicationsByShelter = async (req, res) =>
 
 //Approve or reject updateapplicationstatus
 
-export const updateApplicationStatus = async (req, res) =>
-{
-	try
-	{
+export const updateApplicationStatus = async (req, res) => {
+  try {
+    const { status, responseMessage } = req.body;
 
-		const { status, responseMessage } = req.body;
-		const application = await Application.findById(req.params.id).populate("pet");
-		if (!application)
-		{
-			return res.status(404).json({ message: "Application not found" });
-		}
+    const application = await Application.findById(req.params.id).populate("pet");
 
-		if (application.pet.createdBy.toString() !== req.user._id.toString())
-		{
-			return res.status(403).json({ message: "Not allowed" });
-		}
+    if (!application) {
+      return res.status(404).json({ message: "Application not found" });
+    }
 
-		application.status = status;
-		application.responseMessage = responseMessage || "";
-		await application.save();
+    if (!application.pet?.createdBy) {
+      return res.status(400).json({ message: "Invalid pet data" });
+    }
 
-		//send mail to applicant
-		const applicant = await User.findById(application.user)
-		const pet = application.pet
-		await sendMail({
-			to: applicant.email,
-			subject: `Application Update for ${pet.name}`,
-			html: `
-    <h2>Application Status Updated</h2>
+    if (
+      application.pet.createdBy.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
 
-    <p>
-      Your application for 
-      <b>${pet.name}</b>
-      is now:
-      <b>${status}</b>
-    </p>
+    // update
+    application.status = status;
+    application.responseMessage = responseMessage || "";
+    await application.save();
 
-    <p>
-      <b>Shelter Response:</b>
-      ${responseMessage || "No additional message"}
-    </p>
-  `,
-		});
+    // send email
+    const applicant = await User.findById(application.user);
+    const pet = application.pet;
 
+    await sendMail({
+      to: applicant.email,
+      subject: `Application Update for ${pet.name}`,
+      html: `
+        <h2>Application Status Updated</h2>
 
-		res.json(application);
-	}
-	catch (error)
-	{
-		return res.status(500).json({ message: error.message })
-	}
-}
+        <p>
+          Your application for <b>${pet.name}</b> is now:
+          <b>${status}</b>
+        </p>
+
+        <p>
+          <b>Shelter Response:</b>
+          ${responseMessage || "No additional message"}
+        </p>
+      `,
+    });
+
+    return res.json({
+      success: true,
+      message: "Status updated successfully"
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message || "Internal server error"
+    });
+  }
+};
 
 //find application for particular pet
 
