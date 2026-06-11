@@ -23,7 +23,7 @@ app.use(cors({
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+ allowedHeaders: ["Content-Type", "Authorization", "Cache-Control", "Pragma", "Expires"]
 }));
 
 app.use(express.json());
@@ -58,6 +58,15 @@ app.use((err, req, res, next) =>
 	});
 });
 
+
+app.use((req, res, next) => {
+  if (req.method === "GET") {
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.set("Pragma", "no-cache");
+    res.set("Expires", "0");
+  }
+  next();
+});
 
 const PORT = process.env.PORT || 5000;
 

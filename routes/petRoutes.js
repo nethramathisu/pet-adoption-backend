@@ -17,16 +17,6 @@ router.get("/",getPets);
   router.post(
 	"/",
 	protect,
-	upload.fields([
-		{
-			name: "images",
-			maxCount: 5
-		},
-		{
-			name: "videos",
-			maxCount: 2
-		}
-	]),
 	createPet
 );
 router.put("/:id",protect,upload.fields([

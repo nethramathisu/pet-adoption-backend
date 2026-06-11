@@ -134,7 +134,7 @@ export const updateApplicationStatus = async (req, res) =>
 {
 	try
 	{
-		console.log("🔥 UPDATE HIT");
+		console.log(" UPDATE HIT");
 		console.log("PARAM ID:", req.params.id);
 		console.log("BODY:", req.body);
 		const { status, responseMessage } = req.body;

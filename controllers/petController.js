@@ -5,14 +5,17 @@ import { sendMail } from "../utils/sendEmail.js";
 
 // ================= CREATE PET =================
 
-export const createPet = async (req, res) => {
-	try {
+export const createPet = async (req, res) =>
+{
+	try
+	{
 
 		console.log("BODY:", req.body);
 		console.log("FILES:", req.files);
 
 		// role check
-		if (req.user.role !== "Shelter") {
+		if (req.user.role !== "Shelter")
+		{
 			return res.status(403).json({
 				message: "Only shelters can create pets"
 			});
@@ -36,7 +39,8 @@ export const createPet = async (req, res) => {
 			!name ||
 			!age ||
 			!breed
-		) {
+		)
+		{
 			return res.status(400).json({
 				message:
 					"Name, age and breed are required"
@@ -45,23 +49,17 @@ export const createPet = async (req, res) => {
 
 
 		// uploaded files
+		const imageUrls = Array.isArray(req.body.images)
+			? req.body.images
+			: req.body.images
+				? [req.body.images]
+				: [];
 
-		const imageUrls =
-			req.files?.images?.map(
-				(file) =>
-					file.path ||
-					file.url ||
-					file.secure_url
-			) || [];
-
-		const videoUrls =
-			req.files?.videos?.map(
-				(file) =>
-					file.path ||
-					file.url ||
-					file.secure_url
-			) || [];
-
+		const videoUrls = Array.isArray(req.body.videos)
+			? req.body.videos
+			: req.body.videos
+				? [req.body.videos]
+				: [];
 
 		// create pet
 
@@ -82,14 +80,16 @@ export const createPet = async (req, res) => {
 
 		// send emails
 
-		try {
+		try
+		{
 
 			const adopters =
 				await User.find({
 					role: "Adopter"
 				});
 
-			for (const adopter of adopters) {
+			for (const adopter of adopters)
+			{
 
 				await sendMail({
 					to: adopter.email,
@@ -142,7 +142,8 @@ Visit the platform and meet your future companion ❤️
 			}
 
 		}
-		catch(emailError){
+		catch (emailError)
+		{
 
 			console.log(
 				"Email error:",
@@ -159,7 +160,8 @@ Visit the platform and meet your future companion ❤️
 		});
 
 	}
-	catch (error) {
+	catch (error)
+	{
 
 		console.log(
 			"FULL ERROR:",
@@ -182,9 +184,11 @@ Visit the platform and meet your future companion ❤️
 export const getPets = async (
 	req,
 	res
-) => {
+) =>
+{
 
-	try {
+	try
+	{
 
 		const {
 			name,
@@ -249,7 +253,8 @@ export const getPets = async (
 
 		// search
 
-		if (search) {
+		if (search)
+		{
 
 			filter.$or = [
 
@@ -285,7 +290,8 @@ export const getPets = async (
 
 			if (
 				!isNaN(search)
-			) {
+			)
+			{
 				filter.$or.push({
 					age:
 						Number(search)
@@ -351,7 +357,8 @@ export const getPets = async (
 		});
 
 	}
-	catch (error) {
+	catch (error)
+	{
 
 		console.log(error);
 
@@ -368,36 +375,40 @@ export const getPets = async (
 // ================= GET PET BY ID =================
 
 export const getPetByID =
-async (req,res)=>{
+	async (req, res) =>
+	{
 
-	try{
+		try
+		{
 
-		const pet=
-		await Pet.findById(
-			req.params.id
-		)
-		.populate(
-			"createdBy",
-			"name email"
-		).populate("fosteredBy", "name email");;
+			const pet =
+				await Pet.findById(
+					req.params.id
+				)
+					.populate(
+						"createdBy",
+						"name email"
+					).populate("fosteredBy", "name email");;
 
-		if(!pet){
-			return res.status(404)
-			.json({
-				message:"Pet not found"
+			if (!pet)
+			{
+				return res.status(404)
+					.json({
+						message: "Pet not found"
+					});
+			}
+
+			res.json(pet);
+
+		}
+		catch (error)
+		{
+
+			res.status(500).json({
+				message: error.message
 			});
 		}
-
-		res.json(pet);
-
-	}
-	catch(error){
-
-		res.status(500).json({
-			message:error.message
-		});
-	}
-};
+	};
 
 
 
@@ -405,51 +416,56 @@ async (req,res)=>{
 // ================= UPDATE PET =================
 
 export const updatePet =
-async(req,res)=>{
+	async (req, res) =>
+	{
 
-	try{
+		try
+		{
 
-		const pet=
-		await Pet.findById(
-			req.params.id
-		);
+			const pet =
+				await Pet.findById(
+					req.params.id
+				);
 
-		if(!pet){
-			return res.status(404)
-			.json({
-				message:"Pet not found"
-			});
-		}
-
-		if(
-			pet.createdBy.toString()
-			!==req.user._id.toString()
-		){
-			return res.status(403)
-			.json({
-				message:"Not allowed"
-			});
-		}
-
-		const updatedPet=
-		await Pet.findByIdAndUpdate(
-			req.params.id,
-			req.body,
+			if (!pet)
 			{
-				new:true
+				return res.status(404)
+					.json({
+						message: "Pet not found"
+					});
 			}
-		);
 
-		res.json(updatedPet);
+			if (
+				pet.createdBy.toString()
+				!== req.user._id.toString()
+			)
+			{
+				return res.status(403)
+					.json({
+						message: "Not allowed"
+					});
+			}
 
-	}
-	catch(error){
+			const updatedPet =
+				await Pet.findByIdAndUpdate(
+					req.params.id,
+					req.body,
+					{
+						new: true
+					}
+				);
 
-		res.status(500).json({
-			message:error.message
-		});
-	}
-};
+			res.json(updatedPet);
+
+		}
+		catch (error)
+		{
+
+			res.status(500).json({
+				message: error.message
+			});
+		}
+	};
 
 
 
@@ -457,35 +473,39 @@ async(req,res)=>{
 // ================= DELETE =================
 
 export const deletePetId =
-async(req,res)=>{
+	async (req, res) =>
+	{
 
-	try{
+		try
+		{
 
-		const pet=
-		await Pet.findById(
-			req.params.id
-		);
+			const pet =
+				await Pet.findById(
+					req.params.id
+				);
 
-		if(!pet){
+			if (!pet)
+			{
 
-			return res.status(404)
-			.json({
-				message:"Pet not found"
+				return res.status(404)
+					.json({
+						message: "Pet not found"
+					});
+			}
+
+			await pet.deleteOne();
+
+			res.json({
+				message:
+					"Pet removed successfully"
+			});
+
+		}
+		catch (error)
+		{
+
+			res.status(500).json({
+				message: error.message
 			});
 		}
-
-		await pet.deleteOne();
-
-		res.json({
-			message:
-			"Pet removed successfully"
-		});
-
-	}
-	catch(error){
-
-		res.status(500).json({
-			message:error.message
-		});
-	}
-};
+	};
