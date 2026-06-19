@@ -23,41 +23,28 @@ app.use(cors({
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
- allowedHeaders: ["Content-Type", "Authorization", "Cache-Control", "Pragma", "Expires"]
+  allowedHeaders: ["Content-Type", "Authorization", "Cache-Control", "Pragma", "Expires"]
 }));
 
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
+app.use("/api/pet", petRoutes);
+app.use("/api/applications", applicationRoutes);
+app.use("/api/messages", messageRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/foster", fosterRoutes);
+app.use("/api/meetings", meetingRoutes);
 
-app.use("/api/pet", petRoutes)
-
-app.use("/api/applications", applicationRoutes)
-
-app.use("/api/messages", messageRoutes)
-
-app.use("/api/user", userRoutes)
-
-app.use("/api/reviews",reviewRoutes)
-
-app.get("/", (req, res) =>
-{
-	res.send("Pet adoption loading")
+app.get("/", (req, res) => {
+	res.send("Pet adoption loading");
 });
 
-app.use("/api/foster",fosterRoutes)
-
-app.use("/api/meetings",meetingRoutes);
-
-app.use((err, req, res, next) =>
-{
-	console.log("GLOBAL ERROR:", err);
-	res.status(500).json({
-		message: err.message,
-		stack: err.stack
-	});
+// ✅ Health check — wakes up Render on first load
+app.get("/health", (req, res) => {
+	res.sendStatus(200);
 });
-
 
 app.use((req, res, next) => {
   if (req.method === "GET") {
@@ -68,9 +55,16 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use((err, req, res, next) => {
+	console.log("GLOBAL ERROR:", err);
+	res.status(500).json({
+		message: err.message,
+		stack: err.stack
+	});
+});
+
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () =>
-{
-	console.log(`server is running on PORT ${PORT}`)
+app.listen(PORT, () => {
+	console.log(`server is running on PORT ${PORT}`);
 });
