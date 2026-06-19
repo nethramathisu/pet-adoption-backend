@@ -16,7 +16,7 @@ connectDB();
 
 const app = express();
 
-app.use(cors({
+const corsOptions = {
   origin: [
     "http://localhost:5173",
     "https://pet-adoption-we.netlify.app"
@@ -24,7 +24,12 @@ app.use(cors({
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "Cache-Control", "Pragma", "Expires"]
-}));
+};
+
+app.use(cors(corsOptions));
+
+// ✅ Handle preflight requests for all routes
+app.options("*", cors(corsOptions));
 
 app.use(express.json());
 
@@ -41,7 +46,6 @@ app.get("/", (req, res) => {
 	res.send("Pet adoption loading");
 });
 
-// ✅ Health check — wakes up Render on first load
 app.get("/health", (req, res) => {
 	res.sendStatus(200);
 });
