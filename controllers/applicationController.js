@@ -54,6 +54,7 @@ export const applyForPet = async (req, res) =>
 		const shelter = await User.findById(pet.createdBy)
 		const user = await User.findById(req.user._id)
 
+		res.status(201).json({ createPetApp })
 		await sendMail({
 			to: shelter.email,
 			subject: "New Adoption Application Received",
@@ -63,7 +64,7 @@ export const applyForPet = async (req, res) =>
 			<p><b>Message:</b>${message}</p>`
 
 		})
-		res.status(201).json({ createPetApp })
+
 	}
 	catch (error)
 	{
@@ -169,7 +170,11 @@ export const updateApplicationStatus = async (req, res) =>
 
 		const applicant = await User.findById(application.user);
 		const pet = application.pet;
-
+		return res.json({
+			success: true,
+			message: "Status updated successfully",
+			application
+		});
 		await sendMail({
 			to: applicant.email,
 			subject: `Application Update for ${pet.name}`,
@@ -186,11 +191,7 @@ export const updateApplicationStatus = async (req, res) =>
       `,
 		});
 
-		return res.json({
-			success: true,
-			message: "Status updated successfully",
-			application
-		});
+
 
 	} catch (error)
 	{
