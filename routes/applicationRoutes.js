@@ -1,6 +1,7 @@
 import express from "express";
 import { updateApplicationStatus,getApplicationsByShelter,getUserApplications, applyForPet,getApplicationsForPet} from "../controllers/applicationController.js";
-import {protect} from "../middleware/authmiddleware.js"
+import {protect} from "../middleware/authmiddleware.js";
+import {requestAdditionalInfo,submitAdditionalInfo} from "../controllers/applicationController.js"
 
 const router = express.Router();
 
@@ -14,6 +15,17 @@ router.put("/:id",protect,updateApplicationStatus);
 router.get("/shelter",protect,getApplicationsByShelter)
 router.get("/pet/:petId", protect, getApplicationsForPet);
 
+router.put(
+    "/:applicationId/request-info",
+    protect,
+    requestAdditionalInfo
+);
+
+router.put(
+    "/:applicationId/submit-info",
+    protect,
+    submitAdditionalInfo
+);
 // router.get("/test-email", testEmail); //just for testing
 
 export default router;

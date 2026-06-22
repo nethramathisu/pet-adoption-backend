@@ -5,13 +5,42 @@ const applicationSchema = new mongoose.Schema(
 		pet: { type: mongoose.Schema.Types.ObjectId, ref: "Pet" },
 		status: {
 			type: String,
-			enum: ["approved", "pending", "rejected", "request_more_info"],
-			default: "pending"
+			enum: [
+				"Pending",
+				"Info Requested",
+				"Info Submitted",
+				"Approved",
+				"Rejected"
+			],
+			default: "Pending"
 		},
 		message: String,
 		responseMessage: {
 			type: String,
 			default: "",
+		},
+		infoRequest: {
+			type: String,
+			default: ""
+		},
+		houseType: {
+			type: String,
+			default: ""
+		},
+
+		existingPets: {
+			type: String,
+			default: ""
+		},
+
+		contactNumber: {
+			type: String,
+			default: ""
+		},
+
+		address: {
+			type: String,
+			default: ""
 		},
 	},
 

@@ -235,6 +235,83 @@ export const getApplicationsForPet = async (req, res) =>
 	}
 };
 
+export const requestAdditionalInfo = async (req, res) =>
+{
+	try
+	{
+		const { message } = req.body;
+
+		const application = await Application.findById(
+			req.params.applicationId
+		);
+
+		if (!application)
+		{
+			return res.status(404).json({
+				message: "Application not found"
+			});
+		}
+
+		application.status = "Info Requested";
+		application.infoRequest = message;
+
+		await application.save();
+
+		res.status(200).json({
+			message: "Information requested successfully"
+		});
+	}
+	catch (error)
+	{
+		res.status(500).json({
+			message: error.message
+		});
+	}
+};
+
+
+export const submitAdditionalInfo = async (req, res) =>
+{
+	try
+	{
+		const application = await Application.findById(
+			req.params.applicationId
+		);
+
+		if (!application)
+		{
+			return res.status(404).json({
+				message: "Application not found"
+			});
+		}
+
+		const {
+			houseType,
+			existingPets,
+			contactNumber,
+			address
+		} = req.body;
+
+		application.houseType = houseType;
+		application.existingPets = existingPets;
+		application.contactNumber = contactNumber;
+		application.address = address;
+
+		application.status = "Info Submitted";
+
+		await application.save();
+
+		res.status(200).json({
+			message: "Information submitted successfully"
+		});
+	}
+	catch (error)
+	{
+		res.status(500).json({
+			message: error.message
+		});
+	}
+};
 //just to test email
 
 // export const testEmail = async (req, res) => {
