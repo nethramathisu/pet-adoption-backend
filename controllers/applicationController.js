@@ -82,7 +82,7 @@ export const getUserApplications = async (req, res) =>
 
 		const applications = await Application.find({
 			user: req.user._id,
-		})
+		}).sort({ createdAt: -1 })
 			.populate("pet")
 			.populate("user", "name email");
 
@@ -90,6 +90,13 @@ export const getUserApplications = async (req, res) =>
 
 	} catch (error)
 	{
+		console.log(
+  applications.map(app => ({
+    id: app._id,
+    createdAt: app.createdAt,
+    message: app.message,
+  }))
+);
 		return res.status(500).json({
 			message:
 				error.message || "Internal server error",
@@ -105,7 +112,7 @@ export const getApplicationsByShelter = async (req, res) =>
 {
 	try
 	{
-		const applications = await Application.find()
+		const applications = await Application.find().sort({ createdAt: -1 })
 			.populate({
 				path: "pet",
 				select: "name images createdBy"
